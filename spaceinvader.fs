@@ -80,7 +80,7 @@ Create enemies num-enemies 3 * allot
 ;
 
 : add-player { addr x y } ( addr x y -- addr )
-    addr 'o' x y write-c-to-pos addr
+    addr 'o' x y write-c-to-pos
 ;
 
 : add-enemy { addr x y type }
@@ -123,8 +123,8 @@ Create enemies num-enemies 3 * allot
         dup c@ swap \ fetch x
         dup 1 + c@ swap \ fetch y
         2 + c@ \ fetch type
-        .s cr
         add-enemy
+        drop
     loop
     board
 ;
@@ -144,10 +144,22 @@ Create enemies num-enemies 3 * allot
 
         marco-tick 0 +do
             get-input dup if
-                .
+                dup \ copy because of 2 checks
+                dup 2147483648 = swap 97 = or if
+                    swap \ get position
+                    1 - 1 max \ bounded move
+                    swap
+                then
+                dup 2147483649 = swap 100 = or if
+                    1 + game-width 2 - min \ bounded move
+                then
             else
                 drop \ no key input
             then
+            ( alien-pos player-pos )
+
+            board clear-board add-enemies swap dup -rot game-heigth 1 -  add-player print-board
+
             tick sleep
         loop
 
