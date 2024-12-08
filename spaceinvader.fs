@@ -1,6 +1,7 @@
 
 20 Value game-heigth
 70 Value game-width
+0 Value y-aliens
 Create board game-width 2 + game-heigth * allot
 36 Constant num-enemies
 Create enemies num-enemies 3 * allot
@@ -95,22 +96,22 @@ Create enemies num-enemies 3 * allot
     then
 ;
 
-: init-enemies ( -- )
+: set-enemies { xpos ypos } ( xpos -- )
     num-enemies 0 u+do
         enemies i 3 * + \ base offset
         num-enemies 3 / i > if
-            dup i num-enemies 3 / mod 2 * 1 + swap c! \ store x (offset 0)
-            dup 1 + 0 swap c! \ store y (offset 1)
+            dup i num-enemies 3 / mod 2 * 1 + xpos + swap c! \ store x (offset 0)
+            dup 1 + 0 ypos + swap c! \ store y (offset 1)
             2 + 1 swap c! \ store type (offset 2) (type=1)
         then
         num-enemies 3 / i <= num-enemies 3 / 2 * i > and if
-            dup i num-enemies 3 / mod 2 * 1 + swap c! \ store x (offset 0)
-            dup 1 + 2 swap c! \ store y (offset 1)
+            dup i num-enemies 3 / mod 2 * 1 + xpos + swap c! \ store x (offset 0)
+            dup 1 + 2 ypos + swap c! \ store y (offset 1)
             2 + 2 swap c! \ store type (offset 2) (type=2)
         then
         num-enemies 3 / 2 * i <= if
-            dup i num-enemies 3 / mod 2 * 1 + swap c! \ store x (offset 0)
-            dup 1 + 4 swap c! \ store y (offset 1)
+            dup i num-enemies 3 / mod 2 * 1 + xpos + swap c! \ store x (offset 0)
+            dup 1 + 4 ypos + swap c! \ store y (offset 1)
             2 + 3 swap c! \ store type (offset 2) (type=3)
         then
     loop
@@ -129,19 +130,40 @@ Create enemies num-enemies 3 * allot
     board
 ;
 
+: move-aliens { dir pos }
+    dir dir pos + \ new pos
+
+    dup -1 = if
+        swap drop 1 swap \ change direction to right
+        drop pos \ keep original position
+        y-aliens 1 + to y-aliens \ move aliens down
+    then
+
+    dup game-width num-enemies 3 / 2 * - = if
+        swap drop -1 swap \ change direction to left
+        drop pos \ keep original position
+        y-aliens 1 + to y-aliens  \ move aliens down
+    then
+
+;
+
+: update-alien-pos { pos }
+    pos y-aliens set-enemies
+;
+
 : game-init ( -- board )
-    init-enemies board clear-board add-enemies
+    0 0 set-enemies board clear-board add-enemies
     game-width 2 / \ x pos
     game-heigth 1 - \ y pos
     add-player
 ;
 
 : game-loop { board } ( board -- )
+    1 \ alien direction
     0 \ alien position tracker
     0 \ player position tracker
 
-    0 begin \ endless game loop
-
+    begin \ endless game loop
         marco-tick 0 +do
             get-input dup if
                 dup \ copy because of 2 checks
@@ -156,12 +178,15 @@ Create enemies num-enemies 3 * allot
             else
                 drop \ no key input
             then
-            ( alien-pos player-pos )
+            ( alien-dir alien-pos player-pos )
 
-            board clear-board add-enemies swap dup -rot game-heigth 1 -  add-player print-board
+            board clear-board add-enemies swap dup -rot game-heigth 1 -  add-player print-board \ draw the board
 
             tick sleep
         loop
+        \ move the aliens
 
+        -rot move-aliens rot ( alien-dir alien-pos player-pos)
+        -rot dup update-alien-pos rot
     again
 ;
