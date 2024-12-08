@@ -7,6 +7,9 @@ Create board game-width 2 + game-heigth * allot
 Create enemies num-enemies 3 * allot
 100 Constant tick \ length of a tick is ms
 10 Constant marco-tick \ every <value> tick is a macro-tick
+100 Constant max-projectile
+Create projectile max-projectile 2 * allot \ arbitray bound but should work
+
 
 : clear-window ( -- )
     10 0 u+do cr loop
@@ -147,12 +150,19 @@ Create enemies num-enemies 3 * allot
 
 ;
 
+
 : update-alien-pos { pos }
     pos y-aliens set-enemies
 ;
 
+: init-projectile ( -- )
+    max-projectile 2 * 0 u+do
+        -1 projectile c!
+    loop
+;
+
 : game-init ( -- board )
-    0 0 set-enemies board clear-board add-enemies
+    0 0 set-enemies board clear-board add-enemies init-projectile
     game-width 2 / \ x pos
     game-heigth 1 - \ y pos
     add-player
@@ -161,12 +171,13 @@ Create enemies num-enemies 3 * allot
 : game-loop { board } ( board -- )
     1 \ alien direction
     0 \ alien position tracker
-    0 \ player position tracker
+    game-width 2 / \ player position tracker
 
     begin \ endless game loop
         marco-tick 0 +do
             get-input dup if
-                dup \ copy because of 2 checks
+
+                dup dup \ copy because of 3 checks
                 dup 2147483648 = swap 97 = or if
                     swap \ get position
                     1 - 1 max \ bounded move
@@ -175,12 +186,15 @@ Create enemies num-enemies 3 * allot
                 dup 2147483649 = swap 100 = or if
                     1 + game-width 2 - min \ bounded move
                 then
+                dup 2147483650 = swap 119 = or if
+                    s" fire" type cr
+                then
             else
                 drop \ no key input
             then
             ( alien-dir alien-pos player-pos )
 
-            board clear-board add-enemies swap dup -rot game-heigth 1 -  add-player print-board \ draw the board
+            board clear-board add-enemies swap dup -rot game-heigth 1 -  add-player drop \ print-board \ draw the board
 
             tick sleep
         loop
