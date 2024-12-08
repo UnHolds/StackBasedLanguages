@@ -157,8 +157,33 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
 
 : init-projectile ( -- )
     max-projectile 2 * 0 u+do
-        -1 projectile c!
+        255 projectile i + c!
     loop
+;
+
+: fire-projectile { pos } ( pos -- pos )
+    max-projectile 0 +do
+        projectile i 2 * + c@ 255 = if
+            pos projectile i 2 * + c!
+            game-heigth 2 - projectile i 2 * 1 + + c!
+            leave
+        then
+    loop
+    pos
+;
+
+: add-projectiles { board } ( board -- board )
+    max-projectile 0 +do
+        projectile i 2 * + c@ 255 <> if
+            board '|'
+
+
+            projectile i 2 * + c@
+            projectile i 2 * 1 + + c@
+            write-c-to-pos drop
+        then
+    loop
+    board
 ;
 
 : game-init ( -- board )
@@ -174,27 +199,30 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
     game-width 2 / \ player position tracker
 
     begin \ endless game loop
-        marco-tick 0 +do
+        marco-tick 0 u+do
             get-input dup if
 
-                dup dup \ copy because of 3 checks
+                dup \ copy because of  checks
                 dup 2147483648 = swap 97 = or if
                     swap \ get position
                     1 - 1 max \ bounded move
                     swap
                 then
+                dup \ copy because of  checks
                 dup 2147483649 = swap 100 = or if
+                    swap
                     1 + game-width 2 - min \ bounded move
+                    swap
                 then
                 dup 2147483650 = swap 119 = or if
-                    s" fire" type cr
+                    fire-projectile
                 then
             else
                 drop \ no key input
             then
             ( alien-dir alien-pos player-pos )
 
-            board clear-board add-enemies swap dup -rot game-heigth 1 -  add-player drop \ print-board \ draw the board
+            board clear-board add-enemies add-projectiles swap dup -rot game-heigth 1 -  add-player print-board \ draw the board
 
             tick sleep
         loop
