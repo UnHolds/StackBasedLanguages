@@ -5,8 +5,8 @@
 Create board game-width 2 + game-heigth * allot
 36 Constant num-enemies
 Create enemies num-enemies 3 * allot
-100 Constant tick \ length of a tick is ms
-10 Constant marco-tick \ every <value> tick is a macro-tick
+50 Constant tick \ length of a tick is ms
+5 Constant marco-tick \ every <value> tick is a macro-tick
 100 Constant max-projectile
 Create projectile max-projectile 2 * allot \ arbitray bound but should work
 
@@ -25,6 +25,29 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
     s" ###########################" type cr
     cr cr cr
 ;
+
+: print-win ( -- )
+    cr cr cr
+    s" ###########################" type cr
+    s" #                         #" type cr
+    s" #       YOU HAVE WON      #" type cr
+    s" #            :)           #" type cr
+    s" #                         #" type cr
+    s" ###########################" type cr
+    cr cr cr
+;
+
+: print-lost ( -- )
+    cr cr cr
+    s" ###########################" type cr
+    s" #                         #" type cr
+    s" #      YOU HAVE LOST      #" type cr
+    s" #            :c           #" type cr
+    s" #                         #" type cr
+    s" ###########################" type cr
+    cr cr cr
+;
+
 
 : write-c-to-pos ( addr c x y -- addr)
     game-width * + rot dup -rot + rot swap ( addr c offset-addr )
@@ -243,6 +266,28 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
     board
 ;
 
+: check-win  ( -- flag )
+    true
+    num-enemies 0 u+do
+        enemies i 3 * 2 + + c@ 0<> if
+            drop false
+            leave
+        then
+    loop
+;
+
+: check-lose ( -- flag )
+    false
+    num-enemies 0 u+do
+        enemies i 3 * 2 + + c@ 0<> if
+            enemies i 3 * 1 + + c@ game-heigth 1 - = if \ check if alive enemy is on bottom
+                drop true
+                leave
+            then
+        then
+    loop
+;
+
 : game-init ( -- board )
     0 0 true set-enemies board clear-board add-enemies init-projectile
     game-width 2 / \ x pos
@@ -281,6 +326,19 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
 
             board clear-board add-enemies add-projectiles update-projectiles check-hits swap dup -rot game-heigth 1 - add-player print-board \ draw the board
 
+            \ check win
+            check-win if
+                drop drop drop \ clearup stack
+                true \ set true for win
+                unloop exit
+            then
+
+            check-lose if
+                drop drop drop \ clearup stack
+                false \ set false for lose
+                unloop exit
+            then
+
             tick sleep
         loop
         \ move the aliens
@@ -288,4 +346,16 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
         -rot move-aliens rot ( alien-dir alien-pos player-pos)
         -rot dup update-alien-pos rot
     again
+;
+
+: start-game ( -- )
+
+    game-init game-loop
+
+    clear-window
+    if
+        print-win
+    else
+        print-lost
+    then
 ;
