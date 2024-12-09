@@ -172,6 +172,19 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
     pos
 ;
 
+: update-projectiles ( board -- board )
+
+    max-projectile 0 +do
+        projectile i 2 * 1 + + c@ 255 <> if
+            projectile i 2 * 1 + + c@ 1 - projectile i 2 * 1 + +  .s c!
+        then
+        projectile i 2 * 1 + + c@ -1 = if
+            255 projectile i 2 * + c!
+            255 projectile i 2 * 1 + + c!
+        then
+    loop
+;
+
 : add-projectiles { board } ( board -- board )
     max-projectile 0 +do
         projectile i 2 * + c@ 255 <> if
@@ -222,7 +235,7 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
             then
             ( alien-dir alien-pos player-pos )
 
-            board clear-board add-enemies add-projectiles swap dup -rot game-heigth 1 -  add-player print-board \ draw the board
+            board clear-board add-enemies add-projectiles update-projectiles swap dup -rot game-heigth 1 -  add-player print-board \ draw the board
 
             tick sleep
         loop
