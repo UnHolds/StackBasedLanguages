@@ -88,6 +88,9 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
 ;
 
 : add-enemy { addr x y type }
+    type 0 = if
+        addr \ dead
+    then
     type 1 = if
         addr 'T' x y write-c-to-pos
     then
@@ -99,23 +102,35 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
     then
 ;
 
-: set-enemies { xpos ypos } ( xpos -- )
+: set-enemies { xpos ypos init }
     num-enemies 0 u+do
         enemies i 3 * + \ base offset
         num-enemies 3 / i > if
             dup i num-enemies 3 / mod 2 * 1 + xpos + swap c! \ store x (offset 0)
             dup 1 + 0 ypos + swap c! \ store y (offset 1)
-            2 + 1 swap c! \ store type (offset 2) (type=1)
+            init true = if
+                2 + 1 swap c! \ store type (offset 2) (type=1)
+            else
+                drop
+            then
         then
         num-enemies 3 / i <= num-enemies 3 / 2 * i > and if
             dup i num-enemies 3 / mod 2 * 1 + xpos + swap c! \ store x (offset 0)
             dup 1 + 2 ypos + swap c! \ store y (offset 1)
-            2 + 2 swap c! \ store type (offset 2) (type=2)
+            init true = if
+                2 + 2 swap c! \ store type (offset 2) (type=2)
+            else
+                drop
+            then
         then
         num-enemies 3 / 2 * i <= if
             dup i num-enemies 3 / mod 2 * 1 + xpos + swap c! \ store x (offset 0)
             dup 1 + 4 ypos + swap c! \ store y (offset 1)
-            2 + 3 swap c! \ store type (offset 2) (type=3)
+            init true = if
+                2 + 3 swap c! \ store type (offset 2) (type=3)
+            else
+                drop
+            then
         then
     loop
 ;
@@ -152,7 +167,7 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
 
 
 : update-alien-pos { pos }
-    pos y-aliens set-enemies
+    pos y-aliens false set-enemies
 ;
 
 : init-projectile ( -- )
@@ -173,10 +188,9 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
 ;
 
 : update-projectiles ( board -- board )
-
-    max-projectile 0 +do
+    max-projectile 0 u+do
         projectile i 2 * 1 + + c@ 255 <> if
-            projectile i 2 * 1 + + c@ 1 - projectile i 2 * 1 + +  .s c!
+            projectile i 2 * 1 + + c@ 1 - projectile i 2 * 1 + + c!
         then
         projectile i 2 * 1 + + c@ -1 = if
             255 projectile i 2 * + c!
@@ -185,12 +199,42 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
     loop
 ;
 
+: check-hits { board } ( board -- board )
+    \ loop through all the projectiles
+    max-projectile 0 u+do
+        \ check if projectile is "live"
+        projectile i 2 * 1 + + c@ 255 <> if
+            \ loop throug all the enemies
+            num-enemies 0 u+do
+                enemies i 3 * 2 + + c@ 0<> if \ check if enemy is alive
+                    enemies i 3 * + c@ \ enemy x
+                    projectile j 2 * + c@ \ projectile x
+                    =
+
+                    enemies i 3 * 1 + + c@ \ enemy y
+                    projectile j 2 * 1 + + c@ \ projectile y
+                    =
+
+                    and if
+                        \ draw explosion
+                        board '#' enemies i 3 * + c@ enemies i 3 * 1 + + c@ write-c-to-pos drop
+                        \ remove projectile
+                        255 projectile j 2 * + c!
+                        255 projectile j 2 * 1 + + c!
+                        \ remove enemy
+                        0 enemies i 3 * 2 + + c!
+                    then
+                then
+            loop
+        then
+    loop
+    board
+;
+
 : add-projectiles { board } ( board -- board )
-    max-projectile 0 +do
+    max-projectile 0 u+do
         projectile i 2 * + c@ 255 <> if
             board '|'
-
-
             projectile i 2 * + c@
             projectile i 2 * 1 + + c@
             write-c-to-pos drop
@@ -200,7 +244,7 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
 ;
 
 : game-init ( -- board )
-    0 0 set-enemies board clear-board add-enemies init-projectile
+    0 0 true set-enemies board clear-board add-enemies init-projectile
     game-width 2 / \ x pos
     game-heigth 1 - \ y pos
     add-player
@@ -235,7 +279,7 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
             then
             ( alien-dir alien-pos player-pos )
 
-            board clear-board add-enemies add-projectiles update-projectiles swap dup -rot game-heigth 1 -  add-player print-board \ draw the board
+            board clear-board add-enemies add-projectiles update-projectiles check-hits swap dup -rot game-heigth 1 - add-player print-board \ draw the board
 
             tick sleep
         loop
