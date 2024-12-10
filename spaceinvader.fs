@@ -350,6 +350,12 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
 
 : start-game ( -- )
 
+    print-welcome
+
+    5000 sleep
+
+    clear-window
+
     game-init game-loop
 
     clear-window
