@@ -295,6 +295,25 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
     add-player
 ;
 
+: handle-input ( key -- )
+    dup \ copy because of  checks
+    dup 2147483648 = swap 97 = or if \ a | left key
+        swap \ get position
+        1 - 1 max \ bounded move
+        swap
+    then
+    dup \ copy because of  checks
+    dup 2147483649 = swap 100 = or if \ d | rigth key
+        swap
+        1 + game-width 2 - min \ bounded move
+        swap
+    then
+    dup 2147483650 = swap 119 = or if
+        fire-projectile
+    then
+;
+\ change speed of invaders
+\ create bunkers
 : game-loop { board } ( board -- )
     1 \ alien direction
     0 \ alien position tracker
@@ -303,28 +322,16 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
     begin \ endless game loop
         marco-tick 0 u+do
             get-input dup if
-
-                dup \ copy because of  checks
-                dup 2147483648 = swap 97 = or if
-                    swap \ get position
-                    1 - 1 max \ bounded move
-                    swap
-                then
-                dup \ copy because of  checks
-                dup 2147483649 = swap 100 = or if
-                    swap
-                    1 + game-width 2 - min \ bounded move
-                    swap
-                then
-                dup 2147483650 = swap 119 = or if
-                    fire-projectile
-                then
+                ( alien-dir alien-pos player-pos key )
+                handle-input
             else
                 drop \ no key input
             then
             ( alien-dir alien-pos player-pos )
 
-            board clear-board add-enemies add-projectiles update-projectiles check-hits swap dup -rot game-heigth 1 - add-player print-board \ draw the board
+            board clear-board add-enemies add-projectiles update-projectiles check-hits
+            swap dup -rot game-heigth 1 - ( ... board x y ) add-player
+            print-board \ draw the board
 
             \ check win
             check-win if
@@ -343,7 +350,7 @@ Create projectile max-projectile 2 * allot \ arbitray bound but should work
         loop
         \ move the aliens
 
-        -rot move-aliens rot ( alien-dir alien-pos player-pos)
+        -rot move-aliens rot ( alien-dir alien-pos player-pos )
         -rot dup update-alien-pos rot
     again
 ;
