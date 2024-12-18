@@ -1,0 +1,13 @@
+services:
+  gforth:
+    build: base/
+    image: gforth/base
+    container_name: gforth
+
+  safe-gforth:
+    build: safe/
+    image: gforth/safe
+    container_name: gforth-safe
+    stdin_open: true
+    tty: true
+    command: sh
