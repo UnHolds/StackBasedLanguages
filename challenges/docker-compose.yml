@@ -8,6 +8,5 @@ services:
     build: safe/
     image: gforth/safe
     container_name: gforth-safe
-    stdin_open: true
-    tty: true
-    command: sh
+    ports:
+      - 8080:8080

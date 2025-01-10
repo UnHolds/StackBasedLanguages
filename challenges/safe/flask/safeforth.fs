@@ -32,8 +32,6 @@ Create line-buffer  max-line 2 + allot
 
 ;
 
-
-
 wordlist constant safe-wordlist \ create new wordlist
 safe-wordlist set-current \ set the compilation wordlist as the new wordlist
 safe-wordlist >order \ add the new wordlist to the wordlists (make it searchable)
