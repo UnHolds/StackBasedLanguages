@@ -2,9 +2,12 @@ from flask import Flask, request, jsonify
 import hashlib
 import os
 import subprocess
-
+import logging
+import sys
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("gunicorn.error")
 
 @app.route("/challenge", methods = ['POST'])
 def challenge():
@@ -23,8 +26,16 @@ def challenge():
         f.write(content['code'])
         print(f"writing: {path}")
 
+    safe_command_args = []
+    for file in filter(lambda f: not f.startswith('.'), os.listdir("./safe_files")):
+        safe_command_args.append("-e")
+        safe_command_args.append(f's" safe_files/{file}"')
+
+
+    nonce = str(abs(int.from_bytes(os.urandom(3), sys.byteorder)) + 10000)
+
     # execute file
-    result = subprocess.run(['gforth', 'safeforth.fs', path, '-e', 'bye'], stdout=subprocess.PIPE)
+    result = subprocess.run(['gforth', "setup.fs", "-e", "0"] + safe_command_args + ['safeforth.fs', path, "-e", nonce, "-e", ".", "checker.fs", '-e', 'bye'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # remove file
     try:
@@ -32,13 +43,35 @@ def challenge():
     except:
         pass
 
-    print(result.stdout)
     res = {
         'result': 'fail',
         'reason': ''
     }
+    error_output = result.stderr.decode("utf-8").strip()
+    std_output = result.stdout.decode("utf-8").strip()
+
+    logger.info(f"Gforth result: {std_output}")
+    logger.info(f"Gforth error: {error_output}")
+
+    #error handling
     if result.returncode != 0:
-        res['reason'] = 'gforth exited with error'
+        error_msg = 'gforth exited with error'
+        if error_output.startswith("\nin file included from"):
+            error_msg = "error: ".join(error_output.split("error: ")[1:])
+        res['reason'] = error_msg
+    else:
+        checker_res = std_output.split(nonce)[-1].strip()
+        if checker_res == "0":
+            # win condition
+            res = {
+                'result': 'success',
+                'reason': 'You did it :)'
+            }
+        else:
+            res = {
+                'result': 'fail',
+                'reason': 'The solution is not correct' if checker_res == "1" else checker_res
+            }
 
     return jsonify(res)
 

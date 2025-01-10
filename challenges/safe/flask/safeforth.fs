@@ -25,7 +25,11 @@ Create line-buffer  max-line 2 + allot
 ;
 
 : copy-from-all-arg-files ( ... addr u -- )
-  depth 2 / 0 u+do \ loop through the number of strings on the stack1
+  depth 2 / 0 u+do \ loop through the number of strings on the stack1 of 0 is encountered
+    dup 0 = if
+      drop
+      leave
+    endif
     copy-names-from-file
     drop
   loop
