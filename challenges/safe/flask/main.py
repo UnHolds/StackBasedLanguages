@@ -4,6 +4,8 @@ import os
 import subprocess
 import logging
 import sys
+import values
+import random
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -33,9 +35,20 @@ def challenge():
 
 
     nonce = str(abs(int.from_bytes(os.urandom(3), sys.byteorder)) + 10000)
+    seed = int.from_bytes(os.urandom(3), sys.byteorder)
+
+    init_valus = []
+    for val in values.init(content["id"], seed):
+        init_valus.append("-e")
+        init_valus.append(str(val))
+
+    last_valus = []
+    for val in values.last(content["id"], seed):
+        last_valus.append("-e")
+        last_valus.append(str(val))
 
     # execute file
-    result = subprocess.run(['gforth', "setup.fs", "-e", "0"] + safe_command_args + ['safeforth.fs', path, "-e", nonce, "-e", ".", "checker.fs", '-e', 'bye'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = subprocess.run(['gforth', "setup.fs"] + init_valus + ["-e", "0"] + safe_command_args + ['safeforth.fs', path, "-e", nonce, "-e", "."] + last_valus + [ "checker.fs", '-e', 'bye'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # remove file
     try:
@@ -56,7 +69,7 @@ def challenge():
     #error handling
     if result.returncode != 0:
         error_msg = 'gforth exited with error'
-        if error_output.startswith("\nin file included from"):
+        if error_output.startswith("in file included from") and "checker.fs" not in error_output:
             error_msg = "error: ".join(error_output.split("error: ")[1:])
         res['reason'] = error_msg
     else:
