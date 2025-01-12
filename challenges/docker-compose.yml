@@ -19,3 +19,12 @@ services:
       - safe-gforth
     ports:
       - 8080:8080
+
+  biggest:
+    build: biggest/
+    image: gforth/biggest
+    container_name: gforth-biggest
+    depends_on:
+      - safe-gforth
+    ports:
+      - 8081:8080
