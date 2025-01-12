@@ -8,10 +8,14 @@ services:
     build: safe/
     image: gforth/safe
     container_name: gforth-safe
+    depends_on:
+      - gforth
 
   simple:
     build: simple/
     image: gforth/simple
     container_name: gforth-simple
+    depends_on:
+      - safe-gforth
     ports:
       - 8080:8080
