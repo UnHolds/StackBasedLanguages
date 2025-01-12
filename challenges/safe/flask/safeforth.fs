@@ -44,5 +44,10 @@ safe-wordlist >order \ add the new wordlist to the wordlists (make it searchable
 copy-from-all-arg-files
 copy-names bye bootmessage
 
+\ create new user wordlist (to prevent redefinition exploit)
+wordlist constant user-wordlist \ create new wordlist
+user-wordlist set-current \ set the compilation wordlist as the new wordlist
+
+
 \ remove all other save lists
-safe-wordlist 1 set-order
+user-wordlist safe-wordlist 2 set-order
