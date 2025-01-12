@@ -1,3 +1,49 @@
+# Biggest
+
+## Description
+
+Find the biggest number in 10 numbers and leave it on the stack
+
+## Input Stack
+
+Ten numbers
+```
+<number>
+...
+<number>
+```
+
+## Output Stack
+
+Biggest number
+```
+<number>
+```
+
+## Keywords
+
+```
+:
+;
+(
+)
+{
+if
+else
+endif
+>
+u+do
+loop
+i
+dup
+2dup
+swap
+drop
+=
++
+hello
+```
+
 
 ## Solution
 
